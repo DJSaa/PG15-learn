@@ -282,7 +282,9 @@ transformOptionalSelectInto(ParseState *pstate, Node *parseTree)
 			stmt = stmt->larg;
 		Assert(stmt && IsA(stmt, SelectStmt) && stmt->larg == NULL);
 
-		if (stmt->intoClause)
+		// SELECT vale1,value2 into Table2 from Table1
+		// 　要求目标表Table2不存在，因为在插入时会自动创建表Table2，并将Table1中指定字段数据复制到Table2中
+		if (stmt->intoClause) // select into ..   变成CreateTableAsStmt
 		{
 			CreateTableAsStmt *ctas = makeNode(CreateTableAsStmt);
 
@@ -355,7 +357,7 @@ transformStmt(ParseState *pstate, Node *parseTree)
 			result = transformMergeStmt(pstate, (MergeStmt *) parseTree);
 			break;
 
-		case T_SelectStmt:
+		case T_SelectStmt: // select 这里应该是最难的，先看它
 			{
 				SelectStmt *n = (SelectStmt *) parseTree;
 

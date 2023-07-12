@@ -5784,10 +5784,12 @@ RecoveryInProgress(void)
 	 * can't re-enter recovery, so there's no need to keep checking after the
 	 * shared variable has once been seen false.
 	 */
-	if (!LocalRecoveryInProgress)
+	if (!LocalRecoveryInProgress) // 如果它为false，那么就返回false，
 		return false;
 	else
-	{
+	{ 	
+		// 如果上面为true，那么需要 检测   shared variable的值， 当那个值变化了后续也就不需要再检测了
+		// 那么推测这个值是一次性的。
 		/*
 		 * use volatile pointer to make sure we make a fresh read of the
 		 * shared variable.

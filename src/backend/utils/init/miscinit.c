@@ -599,6 +599,7 @@ GetAuthenticatedUserId(void)
  * and perhaps restored is indeed invalid.  We have to be able to get
  * through AbortTransaction without asserting in case InitPostgres fails.
  */
+// set / get  userId 安and sec_ctx
 void
 GetUserIdAndSecContext(Oid *userid, int *sec_context)
 {

@@ -102,7 +102,7 @@ DestReceiver *None_Receiver = (DestReceiver *) &donothingDR;
 void
 BeginCommand(CommandTag commandTag, CommandDest dest)
 {
-	/* Nothing to do at present */
+	/* Nothing to do at present */ // 目前什么都没有， BeginCommand
 }
 
 /* ----------------

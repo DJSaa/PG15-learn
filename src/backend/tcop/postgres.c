@@ -595,10 +595,10 @@ pg_parse_query(const char *query_string)
 
 	TRACE_POSTGRESQL_QUERY_PARSE_START(query_string);
 
-	if (log_parser_stats)
+	if (log_parser_stats) // 默认是false
 		ResetUsage();
 
-	raw_parsetree_list = raw_parser(query_string, RAW_PARSE_DEFAULT);
+	raw_parsetree_list = raw_parser(query_string, RAW_PARSE_DEFAULT); // parse
 
 	if (log_parser_stats)
 		ShowUsage("PARSER STATISTICS");
@@ -989,13 +989,13 @@ pg_plan_queries(List *querytrees, const char *query_string, int cursorOptions,
  * Execute a "simple Query" protocol message.
  */
 static void
-exec_simple_query(const char *query_string)
+exec_simple_query(const char *query_string) // 执行一个简单的语句
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
 	List	   *parsetree_list;
 	ListCell   *parsetree_item;
-	bool		save_log_statement_stats = log_statement_stats;
+	bool		save_log_statement_stats = log_statement_stats; // 默认false
 	bool		was_logged = false;
 	bool		use_implicit_block;
 	char		msec_str[32];
@@ -1042,7 +1042,7 @@ exec_simple_query(const char *query_string)
 	 * Do basic parsing of the query or queries (this should be safe even if
 	 * we are in aborted transaction state!)
 	 */
-	parsetree_list = pg_parse_query(query_string);
+	parsetree_list = pg_parse_query(query_string); // 构建 parse-tree
 
 	/* Log immediately if dictated by log_statement */
 	if (check_log_statement(parsetree_list))
@@ -1057,7 +1057,7 @@ exec_simple_query(const char *query_string)
 	/*
 	 * Switch back to transaction context to enter the loop.
 	 */
-	MemoryContextSwitchTo(oldcontext);
+	MemoryContextSwitchTo(oldcontext); // 切回到原来的memContext
 
 	/*
 	 * For historical reasons, if multiple SQL statements are given in a
@@ -1067,7 +1067,7 @@ exec_simple_query(const char *query_string)
 	 * behavior properly in the transaction machinery, we use an "implicit"
 	 * transaction block.
 	 */
-	use_implicit_block = (list_length(parsetree_list) > 1);
+	use_implicit_block = (list_length(parsetree_list) > 1); // 多个语句时 use_implicit_block 为true
 
 	/*
 	 * Run through the raw parsetree(s) and process each one.
@@ -1093,7 +1093,7 @@ exec_simple_query(const char *query_string)
 		 * do any special start-of-SQL-command processing needed by the
 		 * destination.
 		 */
-		commandTag = CreateCommandTag(parsetree->stmt);
+		commandTag = CreateCommandTag(parsetree->stmt); // 看是哪种类型的语句，语句类型可太多了
 
 		set_ps_display(GetCommandTagName(commandTag));
 
@@ -1134,7 +1134,7 @@ exec_simple_query(const char *query_string)
 		/*
 		 * Set up a snapshot if parse analysis/planning will need one.
 		 */
-		if (analyze_requires_snapshot(parsetree))
+		if (analyze_requires_snapshot(parsetree)) // 有些语法树需要这个，  镜像
 		{
 			PushActiveSnapshot(GetTransactionSnapshot());
 			snapshot_set = true;
@@ -1163,10 +1163,10 @@ exec_simple_query(const char *query_string)
 		else
 			oldcontext = MemoryContextSwitchTo(MessageContext);
 
-		querytree_list = pg_analyze_and_rewrite_fixedparams(parsetree, query_string,
+		querytree_list = pg_analyze_and_rewrite_fixedparams(parsetree, query_string, // 语义分析 和 重写
 															NULL, 0, NULL);
 
-		plantree_list = pg_plan_queries(querytree_list, query_string,
+		plantree_list = pg_plan_queries(querytree_list, query_string, // 查询计划
 										CURSOR_OPT_PARALLEL_OK, NULL);
 
 		/*
@@ -2714,7 +2714,7 @@ start_xact_command(void)
 {
 	if (!xact_started)
 	{
-		StartTransactionCommand();
+		StartTransactionCommand(); // 这里才是开启事务的重点
 
 		xact_started = true;
 	}
@@ -2729,7 +2729,7 @@ start_xact_command(void)
 	enable_statement_timeout();
 
 	/* Start timeout for checking if the client has gone away if necessary. */
-	if (client_connection_check_interval > 0 &&
+	if (client_connection_check_interval > 0 && // 使能检测 client conn 的timeout
 		IsUnderPostmaster &&
 		MyProcPort &&
 		!get_timeout_active(CLIENT_CONNECTION_CHECK_TIMEOUT))
@@ -4384,7 +4384,7 @@ PostgresMain(const char *dbname, const char *username)
 	 * Non-error queries loop here.
 	 */
 
-	for (;;)
+	for (;;) // loop 
 	{
 		/*
 		 * At top of loop, reset extended-query-message flag, so that any
@@ -4574,14 +4574,14 @@ PostgresMain(const char *dbname, const char *username)
 
 		switch (firstchar)
 		{
-			case 'Q':			/* simple query */
+			case 'Q':			/* simple query */ // 基本上增删改查那些语句都会进入这个分支，暂时先关注这个。
 				{
 					const char *query_string;
 
 					/* Set statement_timestamp() */
 					SetCurrentStatementStartTimestamp();
 
-					query_string = pq_getmsgstring(&input_message);
+					query_string = pq_getmsgstring(&input_message); // 这里应该就是取sql语句了
 					pq_getmsgend(&input_message);
 
 					if (am_walsender)
@@ -4590,7 +4590,7 @@ PostgresMain(const char *dbname, const char *username)
 							exec_simple_query(query_string);
 					}
 					else
-						exec_simple_query(query_string);
+						exec_simple_query(query_string); // 执行sql语句的入口
 
 					send_ready_for_query = true;
 				}
@@ -5047,7 +5047,7 @@ enable_statement_timeout(void)
 		if (!get_timeout_active(STATEMENT_TIMEOUT))
 			enable_timeout_after(STATEMENT_TIMEOUT, StatementTimeout);
 	}
-	else
+	else // StatementTimeout 默认为0
 	{
 		if (get_timeout_active(STATEMENT_TIMEOUT))
 			disable_timeout(STATEMENT_TIMEOUT, false);

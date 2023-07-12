@@ -1976,7 +1976,7 @@ AtSubCleanup_Memory(void)
  */
 
 /*
- *	StartTransaction
+ *	StartTransaction // 
  */
 static void
 StartTransaction(void)
@@ -1990,10 +1990,10 @@ StartTransaction(void)
 	s = &TopTransactionStateData;
 	CurrentTransactionState = s;
 
-	Assert(!FullTransactionIdIsValid(XactTopFullTransactionId));
+	Assert(!FullTransactionIdIsValid(XactTopFullTransactionId)); // 初始状态的txnId必为无效的
 
 	/* check the current transaction state */
-	Assert(s->state == TRANS_DEFAULT);
+	Assert(s->state == TRANS_DEFAULT); // 初始状态必为 default
 
 	/*
 	 * Set the current transaction state information appropriately during
@@ -2016,7 +2016,7 @@ StartTransaction(void)
 	 */
 	s->nestingLevel = 1;
 	s->gucNestLevel = 1;
-	s->childXids = NULL;
+	s->childXids = NULL; // 子事务的id， 这里默认为空
 	s->nChildXids = 0;
 	s->maxChildXids = 0;
 
@@ -2027,7 +2027,7 @@ StartTransaction(void)
 	GetUserIdAndSecContext(&s->prevUser, &s->prevSecContext);
 
 	/* SecurityRestrictionContext should never be set outside a transaction */
-	Assert(s->prevSecContext == 0);
+	Assert(s->prevSecContext == 0); 
 
 	/*
 	 * Make sure we've reset xact state variables
@@ -2039,7 +2039,7 @@ StartTransaction(void)
 	 */
 	if (RecoveryInProgress())
 	{
-		s->startedInRecovery = true;
+		s->startedInRecovery = true; // 设置 startedInRecovery 
 		XactReadOnly = true;
 	}
 	else
@@ -2048,9 +2048,10 @@ StartTransaction(void)
 		XactReadOnly = DefaultXactReadOnly;
 	}
 	XactDeferrable = DefaultXactDeferrable;
-	XactIsoLevel = DefaultXactIsoLevel;
+	XactIsoLevel = DefaultXactIsoLevel; // 默认的隔离级别
 	forceSyncCommit = false;
 	MyXactFlags = 0;
+	// 可以看到，有些是设置到s上的，有些是设置到全局变量上的。
 
 	/*
 	 * reinitialize within-transaction counters
@@ -2069,20 +2070,23 @@ StartTransaction(void)
 	/*
 	 * must initialize resource-management stuff first
 	 */
-	AtStart_Memory();
-	AtStart_ResourceOwner();
+	AtStart_Memory(); // 分配空间
+	AtStart_ResourceOwner(); // 为s创建一个ResourceOwner
 
 	/*
 	 * Assign a new LocalTransactionId, and combine it with the backendId to
 	 * form a virtual transaction id.
 	 */
 	vxid.backendId = MyBackendId;
-	vxid.localTransactionId = GetNextLocalTransactionId();
+	vxid.localTransactionId = GetNextLocalTransactionId(); 
+	// LocalTransactionId 超限后会循环使用
+	// 由backendId 和  lcTxnId 共同组成
 
 	/*
 	 * Lock the virtual transaction id before we announce it in the proc array
 	 */
 	VirtualXactLockTableInsert(vxid);
+	// 这里是把  localTransactionId 放入了 MyProc的fpLocalTransactionId 中
 
 	/*
 	 * Advertise it in the proc array.  We assume assignment of
@@ -2126,7 +2130,9 @@ StartTransaction(void)
 	 * done with start processing, set current transaction state to "in
 	 * progress"
 	 */
-	s->state = TRANS_INPROGRESS;
+	s->state = TRANS_INPROGRESS; // 设置状态为 INPROGRESS。
+
+	// 其实也就是 txn 对象的创建， 以及相关资源获取， 状态初始化等等。
 
 	ShowTransactionState("StartTransaction");
 }
@@ -2930,10 +2936,10 @@ StartTransactionCommand(void)
 	{
 			/*
 			 * if we aren't in a transaction block, we just do our usual start
-			 * transaction.
+			 * transaction. 简单的未手动开启txn的语句，走这里。
 			 */
-		case TBLOCK_DEFAULT:
-			StartTransaction();
+		case TBLOCK_DEFAULT: 
+			StartTransaction(); // 开始txn
 			s->blockState = TBLOCK_STARTED;
 			break;
 

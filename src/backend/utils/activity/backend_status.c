@@ -509,7 +509,7 @@ pgstat_setup_backend_status_context(void)
 /* ----------
  * pgstat_report_activity() -
  *
- *	Called from tcop/postgres.c to report what the backend is actually doing
+ *	Called from tcop/postgres.c to report what the backend is actually doing // 报告正在做的事
  *	(but note cmd_str can be NULL for certain cases).
  *
  * All updates of the status entry follow the protocol of bumping
